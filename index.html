@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FinanceOS — Global Karunia Supply</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sora',sans-serif;background:#0d0f14;color:#e2e8f0;min-height:100vh}
+input,select,button,textarea{font-family:'Sora',sans-serif;outline:none}
+.card{background:#141720;border:1px solid #1e2438;border-radius:12px;padding:16px}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-p{background:linear-gradient(135deg,#1e90ff,#4facfe);color:#fff}
+.btn-g{background:#1e2438;color:#94a3b8}
+.btn-r{background:#ef444420;color:#ef4444}
+.inp{background:#1a1d26;border:1px solid #1e2438;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:13px;width:100%}
+.inp:focus{border-color:#4facfe}
+.tab{background:none;border:none;cursor:pointer;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:700;color:#64748b}
+.tab.on{background:#1e90ff1a;color:#4facfe;font-weight:800}
+.mbg{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.mod{background:#141720;border:1px solid #1e2438;border-radius:14px;padding:22px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.tr:hover td{background:#1e243810}
+.ntf{position:fixed;top:16px;right:16px;z-index:999;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 20px #0006}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+
+const SB = "https://udyiqfwqrbbuzxlzpxyv.supabase.co";
+const SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkeWlxZndxcmJidXp4bHpweHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDc1NjksImV4cCI6MjA5NjQ4MzU2OX0.nuhILcCfLs-tyN9JS7jS7PX0EC0CkgBGmtw0wfHlfj4";
+const HDR = {"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"};
+
+const api = {
+  get: async (t,q="") => { const r=await fetch(`${SB}/rest/v1/${t}?${q}`,{headers:HDR}); if(!r.ok)throw new Error(await r.text()); return r.json(); },
+  post: async (t,b) => { const r=await fetch(`${SB}/rest/v1/${t}`,{method:"POST",headers:HDR,body:JSON.stringify(b)}); const txt=await r.text(); if(!r.ok)throw new Error(txt); return txt?JSON.parse(txt):[]; },
+  patch: async (t,id,b) => { const r=await fetch(`${SB}/rest/v1/${t}?id=eq.${id}`,{method:"PATCH",headers:HDR,body:JSON.stringify(b)}); const txt=await r.text(); if(!r.ok)throw new Error(txt); return txt?JSON.parse(txt):[]; },
+  del: async (t,id) => { const r=await fetch(`${SB}/rest/v1/${t}?id=eq.${id}`,{method:"DELETE",headers:HDR}); if(!r.ok)throw new Error(await r.text()); },
+  login: async (u,p) => { const r=await fetch(`${SB}/rest/v1/users?username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&select=*`,{headers:HDR}); if(!r.ok)throw new Error(); const d=await r.json(); return d[0]||null; }
+};
+
+const fmt = n => "Rp "+Math.abs(n||0).toLocaleString("id-ID");
+const fmtS = n => (n<0?"-":"")+fmt(n);
+const tot = items => (items||[]).reduce((s,i)=>s+i.qty*i.price,0);
+const SC = {
+  paid:{l:"Lunas",c:"#10b981",b:"#10b98120"},
+  pending:{l:"Menunggu",c:"#f59e0b",b:"#f59e0b20"},
+  overdue:{l:"Jatuh Tempo",c:"#ef4444",b:"#ef444420"},
+  draft:{l:"Draft",c:"#64748b",b:"#64748b20"}
+};
+const CATS = ["Penjualan","Operasional","SDM","Inventori","Marketing","Pendanaan","Lain-lain"];
+const {useState,useEffect,useMemo,useCallback,useRef} = React;
+
+function BarChart({labels,datasets,height=220}) {
+  const ref = useRef(null); const cr = useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(cr.current) cr.current.destroy();
+    cr.current = new Chart(ref.current,{type:"bar",data:{labels,datasets:datasets.map(d=>({...d,borderRadius:6,borderSkipped:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#94a3b8",font:{size:12}}},tooltip:{mode:"index",intersect:false}},scales:{x:{ticks:{color:"#64748b",font:{size:11}},grid:{color:"#1e243840"}},y:{ticks:{color:"#64748b",font:{size:11},callback:v=>"Rp "+(v/1000000).toFixed(1)+"jt"},grid:{color:"#1e243840"}}}}});
+    return ()=>{ if(cr.current) cr.current.destroy(); };
+  },[labels,JSON.stringify(datasets)]);
+  return <canvas ref={ref} style={{height:height+"px"}}/>;
+}
+
+function LineChart({labels,datasets,height=200}) {
+  const ref = useRef(null); const cr = useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(cr.current) cr.current.destroy();
+    cr.current = new Chart(ref.current,{type:"line",data:{labels,datasets:datasets.map(d=>({...d,tension:0.4,fill:true,pointRadius:4}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#94a3b8",font:{size:12}}},tooltip:{mode:"index",intersect:false}},scales:{x:{ticks:{color:"#64748b",font:{size:11}},grid:{color:"#1e243840"}},y:{ticks:{color:"#64748b",font:{size:11},callback:v=>"Rp "+(v/1000000).toFixed(1)+"jt"},grid:{color:"#1e243840"}}}}});
+    return ()=>{ if(cr.current) cr.current.destroy(); };
+  },[labels,JSON.stringify(datasets)]);
+  return <canvas ref={ref} style={{height:height+"px"}}/>;
+}
+
+function DoughnutChart({labels,data,colors,height=180}) {
+  const ref = useRef(null); const cr = useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(cr.current) cr.current.destroy();
+    cr.current = new Chart(ref.current,{type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:"#141720"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{color:"#94a3b8",font:{size:11},padding:12}}}}});
+    return ()=>{ if(cr.current) cr.current.destroy(); };
+  },[labels,JSON.stringify(data)]);
+  return <canvas ref={ref} style={{height:height+"px"}}/>;
+}
+
+function exportExcel(data,filename,sheetName="Data") {
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb,filename+".xlsx");
+}
+
+function ExportBtn({onExcel,onPDF}) {
+  const [open,sOpen] = useState(false);
+  return (
+    <div style={{position:"relative",display:"inline-block"}}>
+      <button className="btn btn-g" style={{fontSize:12}} onClick={()=>sOpen(!open)}>📤 Export ▾</button>
+      {open&&<div style={{position:"absolute",right:0,top:36,background:"#141720",border:"1px solid #1e2438",borderRadius:10,padding:6,zIndex:99,minWidth:160,boxShadow:"0 8px 24px #0008"}}>
+        <button onClick={()=>{onExcel();sOpen(false);}} style={{display:"block",width:"100%",textAlign:"left",padding:"9px 14px",background:"none",border:"none",color:"#e2e8f0",fontSize:13,cursor:"pointer"}}>📊 Excel</button>
+        <button onClick={()=>{onPDF();sOpen(false);}} style={{display:"block",width:"100%",textAlign:"left",padding:"9px 14px",background:"none",border:"none",color:"#e2e8f0",fontSize:13,cursor:"pointer"}}>📄 PDF</button>
+      </div>}
+    </div>
+  );
+}
+
+function Login({onLogin}) {
+  const [u,su]=useState(""); const [p,sp]=useState(""); const [err,se]=useState(""); const [show,ss]=useState(false); const [load,sl]=useState(false);
+  const go = async () => {
+    sl(true); se("");
+    try { const user=await api.login(u,p); if(user) onLogin({name:user.name||u,role:user.role||"User",avatar:"👤"}); else se("Username atau password salah!"); }
+    catch(e) { se("Gagal terhubung ke server."); }
+    sl(false);
+  };
+  return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{width:"100%",maxWidth:380}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{width:56,height:56,background:"linear-gradient(135deg,#1e90ff,#4facfe)",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 12px"}}>💎</div>
+          <div style={{fontWeight:800,fontSize:22}}>FinanceOS</div>
+          <div style={{fontSize:12,color:"#475569",marginTop:3}}>Global Karunia Supply</div>
+        </div>
+        <div className="card">
+          <div style={{marginBottom:14}}>
+            <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Username</label>
+            <input className="inp" style={{padding:"11px 14px"}} value={u} onChange={e=>{su(e.target.value);se("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Username..."/>
+          </div>
+          <div style={{marginBottom:18}}>
+            <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Password</label>
+            <div style={{position:"relative"}}>
+              <input className="inp" style={{padding:"11px 44px 11px 14px"}} type={show?"text":"password"} value={p} onChange={e=>{sp(e.target.value);se("");}} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Password..."/>
+              <button onClick={()=>ss(!show)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#64748b"}}>{show?"🙈":"👁"}</button>
+            </div>
+          </div>
+          {err&&<div style={{background:"#ef444418",border:"1px solid #ef444430",borderRadius:8,padding:"9px 12px",marginBottom:14,fontSize:12,color:"#ef4444",textAlign:"center"}}>⚠ {err}</div>}
+          <button className="btn btn-p" onClick={go} disabled={load||!u||!p} style={{width:"100%",padding:13,fontSize:14,opacity:(load||!u||!p)?.5:1}}>{load?"Memverifikasi...":"Masuk →"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [user,sUser]=useState(null);
+  const [showLogout,sLogout]=useState(false);
+  const [tab,sTab]=useState("dashboard");
+  const [loading,sLoading]=useState(false);
+  const [notif,sNotif]=useState(null);
+  const [prods,sProds]=useState([]);
+  const [invs,sInvs]=useState([]);
+  const [cash,sCash]=useState([]);
+  const [clients,sClients]=useState([]);
+  const [moves,sMoves]=useState([]);
+
+  // Invoice
+  const [showIF,sIF]=useState(false);
+  const [nInv,sNInv]=useState({client:"",clientId:"",due:"",items:[],status:"draft"});
+  const [invItem,sII]=useState({productId:"",qty:1});
+  const [selInv,sSelInv]=useState(null);
+  const [fSt,sFSt]=useState("all");
+
+  // Product
+  const [showPF,sPF]=useState(false);
+  const [editP,sEditP]=useState(null);
+  const [nP,sNP]=useState({name:"",sku:"",category:"",stock:0,price:0,cost:0,min_stock:5});
+  const [srch,sSrch]=useState("");
+
+  // Client
+  const [showCLF,sCLF]=useState(false);
+  const [editCL,sEditCL]=useState(null);
+  const [nCL,sNCL]=useState({name:"",phone:"",address:""});
+
+  // Cash
+  const [showCF,sCF]=useState(false);
+  const [editCF,sEditCF]=useState(null);
+  const [cfPer,sCFPer]=useState(new Date().toISOString().slice(0,7));
+  const [cfType,sCFType]=useState("all");
+  const [nCF,sNCF]=useState({date:"",description:"",category:"Operasional",type:"out",amount:0});
+
+  // Stock movement
+  const [showSM,sSM]=useState(false);
+  const [smType,setSMType]=useState("in");
+  const [nSM,sNSM]=useState({productId:"",qty:0,note:"",type:"in"});
+  const [editSM,sEditSM]=useState(null);
+
+  // Laporan
+  const [lapPer,sLapPer]=useState(new Date().toISOString().slice(0,7));
+
+  const notify=(msg,type="ok")=>{sNotif({msg,type});setTimeout(()=>sNotif(null),3000);};
+
+  const loadAll=useCallback(async()=>{
+    sLoading(true);
+    try {
+      const [p,i,c,cl,mv]=await Promise.all([
+        api.get("products","order=name"),
+        api.get("invoices","order=date.desc"),
+        api.get("cash_entries","order=date.desc"),
+        api.get("clients","order=name").catch(()=>[]),
+        api.get("stock_movements","order=created_at.desc").catch(()=>[])
+      ]);
+      sProds(p||[]);
+      sInvs((i||[]).map(x=>({...x,items:Array.isArray(x.items)?x.items:typeof x.items==="string"?JSON.parse(x.items):[]})));
+      sCash(c||[]);
+      sClients(cl||[]);
+      sMoves(mv||[]);
+    } catch(e){notify("Gagal memuat data!","err");}
+    sLoading(false);
+  },[]);
+
+  useEffect(()=>{if(user)loadAll();},[user,loadAll]);
+
+  const allCash=useMemo(()=>{
+    const auto=invs.filter(i=>i.status==="paid").flatMap(inv=>{
+      const t=tot(inv.items);
+      const c=inv.items.reduce((s,it)=>{const p=prods.find(x=>x.id===it.productId);return s+(p?it.qty*p.cost:0);},0);
+      return [
+        {id:"CI-"+inv.id,date:inv.date,description:"Penerimaan: "+inv.client,category:"Penjualan",type:"in",amount:t,ref:inv.id,auto:true},
+        {id:"CO-"+inv.id,date:inv.date,description:"HPP: "+inv.client,category:"Inventori",type:"out",amount:c,ref:inv.id,auto:true}
+      ];
+    });
+    return [...auto,...cash.map(c=>({...c,auto:false}))].sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  },[invs,cash,prods]);
+
+  const perCash=useMemo(()=>allCash.filter(c=>c.date&&c.date.startsWith(cfPer)),[allCash,cfPer]);
+  const cashIn=perCash.filter(c=>c.type==="in").reduce((s,c)=>s+c.amount,0);
+  const cashOut=perCash.filter(c=>c.type==="out").reduce((s,c)=>s+c.amount,0);
+  const netCash=cashIn-cashOut;
+  const months=[...new Set(allCash.filter(c=>c.date).map(c=>c.date.slice(0,7)))].sort().reverse();
+  const rev=invs.filter(i=>i.status==="paid").reduce((s,i)=>s+tot(i.items),0);
+  const cogs=invs.filter(i=>i.status==="paid").reduce((s,inv)=>s+inv.items.reduce((ss,it)=>{const p=prods.find(x=>x.id===it.productId);return ss+(p?it.qty*p.cost:0);},0),0);
+  const gp=rev-cogs;
+  const pend=invs.filter(i=>["pending","overdue"].includes(i.status)).reduce((s,i)=>s+tot(i.items),0);
+
+  // CRUD
+  const saveInv=async()=>{
+    if(!nInv.client||nInv.items.length===0) return notify("Lengkapi klien & item!","err");
+    try {
+      const id="INV-"+Date.now();
+      const today=new Date().toISOString().split("T")[0];
+      await api.post("invoices",{id,date:today,client:nInv.client,due:nInv.due,status:nInv.status,items:JSON.stringify(nInv.items)});
+      if(nInv.status!=="draft") for(const it of nInv.items){const p=prods.find(x=>x.id===it.productId);if(p)await api.patch("products",p.id,{stock:Math.max(0,p.stock-it.qty)});}
+      await loadAll(); sNInv({client:"",clientId:"",due:"",items:[],status:"draft"}); sIF(false); notify("Invoice dibuat!");
+    } catch(e){notify("Gagal: "+e.message,"err");}
+  };
+
+  const delInv=async(id)=>{
+    if(!window.confirm('Hapus invoice ini?')) return;
+    try{await api.del("invoices",id);await loadAll();notify("Invoice dihapus.");}catch(e){notify("Gagal!","err");}
+  };
+
+  const updIS=async(id,status)=>{
+    const inv=invs.find(i=>i.id===id); const prev=inv.status;
+    try {
+      await api.patch("invoices",id,{status});
+      if(status!=="draft"&&prev==="draft") for(const it of inv.items){const p=prods.find(x=>x.id===it.productId);if(p)await api.patch("products",p.id,{stock:Math.max(0,p.stock-it.qty)});}
+      await loadAll(); notify("Status diperbarui!");
+    } catch(e){notify("Gagal!","err");}
+  };
+
+  const saveProd=async()=>{
+    if(!nP.name||!nP.sku) return notify("Nama & SKU wajib!","err");
+    try {
+      const {id:_,...data}=nP;
+      if(editP) await api.patch("products",editP.id,data);
+      else await api.post("products",data);
+      await loadAll(); sNP({name:"",sku:"",category:"",stock:0,price:0,cost:0,min_stock:5}); sEditP(null); sPF(false); notify(editP?"Produk diperbarui!":"Produk ditambahkan!");
+    } catch(e){notify("Gagal: "+e.message,"err");}
+  };
+
+  const delProd=async id=>{try{await api.del("products",id);await loadAll();notify("Dihapus.");}catch(e){notify("Gagal!","err");}};
+
+  const saveCF=async()=>{
+    if(!nCF.date||!nCF.description||nCF.amount<=0) return notify("Lengkapi semua field!","err");
+    try {
+      if(editCF){
+        await api.patch("cash_entries",editCF.id,{date:nCF.date,description:nCF.description,category:nCF.category,type:nCF.type,amount:nCF.amount});
+        notify("Entri diperbarui!");
+      } else {
+        await api.post("cash_entries",{id:"CF-"+Date.now(),date:nCF.date,description:nCF.description,category:nCF.category,type:nCF.type,amount:nCF.amount,ref:null});
+        notify("Entri ditambahkan!");
+      }
+      await loadAll(); sNCF({date:"",description:"",category:"Operasional",type:"out",amount:0}); sEditCF(null); sCF(false);
+    } catch(e){notify("Gagal: "+e.message,"err");}
+  };
+
+  const delCF=async id=>{try{await api.del("cash_entries",id);await loadAll();notify("Dihapus.");}catch(e){notify("Gagal!","err");}};
+
+  const saveCL=async()=>{
+    if(!nCL.name) return notify("Nama klien wajib!","err");
+    try {
+      if(editCL){
+        await api.patch("clients",editCL.id,{name:nCL.name,phone:nCL.phone,address:nCL.address});
+        notify("Klien diperbarui!");
+      } else {
+        await api.post("clients",{name:nCL.name,phone:nCL.phone,address:nCL.address});
+        notify("Klien ditambahkan!");
+      }
+      await loadAll(); sNCL({name:"",phone:"",address:""}); sEditCL(null); sCLF(false);
+    } catch(e){notify("Gagal: "+e.message,"err");}
+  };
+
+  const delCL=async id=>{try{await api.del("clients",id);await loadAll();notify("Klien dihapus.");}catch(e){notify("Gagal!","err");}};
+
+  const saveStockMove=async()=>{
+    if(!nSM.productId||nSM.qty<=0) return notify("Lengkapi produk & qty!","err");
+    const prod=prods.find(x=>x.id===parseInt(nSM.productId)); if(!prod) return;
+    try {
+      if(editSM){
+        let restored=prod.stock;
+        if(editSM.type==="in") restored=prod.stock-editSM.qty;
+        else if(editSM.type==="out") restored=prod.stock+editSM.qty;
+        else restored=editSM.stock_before;
+        let newStock=restored;
+        if(nSM.type==="in") newStock=restored+parseInt(nSM.qty);
+        else if(nSM.type==="out") newStock=Math.max(0,restored-parseInt(nSM.qty));
+        else newStock=parseInt(nSM.qty);
+        await api.patch("products",prod.id,{stock:Math.max(0,newStock)});
+        await api.patch("stock_movements",editSM.id,{product_id:prod.id,product_name:prod.name,type:nSM.type,qty:parseInt(nSM.qty),stock_before:restored,stock_after:Math.max(0,newStock),note:nSM.note});
+        notify("Riwayat diperbarui!");
+      } else {
+        let newStock=prod.stock;
+        if(nSM.type==="in") newStock=prod.stock+parseInt(nSM.qty);
+        else if(nSM.type==="out") newStock=Math.max(0,prod.stock-parseInt(nSM.qty));
+        else newStock=parseInt(nSM.qty);
+        await api.patch("products",prod.id,{stock:newStock});
+        await api.post("stock_movements",{id:"SM-"+Date.now(),product_id:prod.id,product_name:prod.name,type:nSM.type,qty:parseInt(nSM.qty),stock_before:prod.stock,stock_after:newStock,note:nSM.note,date:new Date().toISOString().split("T")[0]}).catch(()=>{});
+        notify(nSM.type==="in"?"Stok masuk!":nSM.type==="out"?"Stok keluar!":"Opname disimpan!");
+      }
+      await loadAll(); sNSM({productId:"",qty:0,note:"",type:"in"}); sEditSM(null); sSM(false);
+    } catch(e){notify("Gagal: "+e.message,"err");}
+  };
+
+  const delStockMove=async(m)=>{
+    try {
+      const prod=prods.find(x=>x.id===m.product_id);
+      if(prod){let r=prod.stock;if(m.type==="in")r=prod.stock-m.qty;else if(m.type==="out")r=prod.stock+m.qty;else r=m.stock_before;await api.patch("products",prod.id,{stock:Math.max(0,r)});}
+      await api.del("stock_movements",m.id); await loadAll(); notify("Dihapus & stok dikembalikan.");
+    } catch(e){notify("Gagal!","err");}
+  };
+
+  const addII=()=>{
+    const p=prods.find(x=>x.id===parseInt(invItem.productId)); if(!p) return;
+    sNInv(prev=>({...prev,items:[...prev.items,{productId:p.id,qty:parseInt(invItem.qty),price:p.price}]}));
+    sII({productId:"",qty:1});
+  };
+
+  const printInv=(inv)=>{
+    const rows=(inv.items||[]).map(it=>{const p=prods.find(x=>x.id===it.productId);return `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${p?p.name:"Produk"}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${it.qty}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${fmt(it.price)}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#10b981;font-weight:700">${fmt(it.qty*it.price)}</td></tr>`;}).join("");
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice ${inv.id}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Segoe UI,sans-serif;padding:40px;color:#1e293b}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:10px 12px;text-align:left;font-size:12px;color:#64748b}@media print{.np{display:none}}</style></head><body><div class="np" style="text-align:center;margin-bottom:20px"><button onclick="window.print()" style="background:#1e90ff;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-right:8px">Print / PDF</button><button onclick="window.close()" style="background:#f1f5f9;color:#64748b;border:none;padding:10px 18px;border-radius:8px;cursor:pointer">Tutup</button></div><div style="display:flex;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #e2e8f0"><div><div style="font-size:22px;font-weight:800;color:#1e90ff">💎 FinanceOS</div><div style="font-size:12px;color:#64748b">Global Karunia Supply</div></div><div style="text-align:right"><div style="font-size:24px;font-weight:800">INVOICE</div><div style="font-size:12px;color:#64748b">${inv.id}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px"><div style="background:#f8fafc;padding:14px;border-radius:8px"><div style="font-size:11px;color:#94a3b8;margin-bottom:4px">KEPADA</div><div style="font-weight:700;font-size:16px">${inv.client}</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#94a3b8;margin-bottom:4px">TGL INVOICE</div><div style="font-weight:600">${inv.date||"-"}</div></div><div style="background:#f8fafc;padding:12px;border-radius:8px"><div style="font-size:11px;color:#94a3b8;margin-bottom:4px">JATUH TEMPO</div><div style="font-weight:600">${inv.due||"-"}</div></div></div></div><table><thead><tr><th>Produk</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Subtotal</th></tr></thead><tbody>${rows}</tbody></table><div style="text-align:right;margin-top:16px;font-size:18px;font-weight:800;color:#10b981">Total: ${fmt(tot(inv.items))}</div></body></html>`;
+    const w=window.open("","_blank","width=860,height=680"); w.document.write(html); w.document.close();
+  };
+
+  if(!user) return <Login onLogin={sUser}/>;
+
+  const fInvs=invs.filter(i=>fSt==="all"||i.status===fSt);
+  const fProds=prods.filter(p=>p.name.toLowerCase().includes(srch.toLowerCase())||p.sku.toLowerCase().includes(srch.toLowerCase()));
+  const lapCash=allCash.filter(c=>c.date&&c.date.startsWith(lapPer));
+  const lapInvs=invs.filter(i=>i.status==="paid"&&i.date&&i.date.startsWith(lapPer));
+  const lapRev=lapInvs.reduce((s,i)=>s+tot(i.items),0);
+  const lapHPP=lapInvs.reduce((s,inv)=>s+inv.items.reduce((ss,it)=>{const p=prods.find(x=>x.id===it.productId);return ss+(p?it.qty*p.cost:0);},0),0);
+  const lapLK=lapRev-lapHPP;
+  const lapBeban=lapCash.filter(c=>c.type==="out"&&!c.auto).reduce((s,c)=>s+c.amount,0);
+  const lapLB=lapLK-lapBeban;
+
+  // Chart data
+  const monthMap={};
+  allCash.forEach(c=>{if(!c.date)return;const m=c.date.slice(0,7);if(!monthMap[m])monthMap[m]={rev:0,hpp:0,cashIn:0,cashOut:0};if(c.type==="in"&&c.auto)monthMap[m].rev+=c.amount;if(c.type==="out"&&c.auto)monthMap[m].hpp+=c.amount;if(c.type==="in")monthMap[m].cashIn+=c.amount;if(c.type==="out")monthMap[m].cashOut+=c.amount;});
+  const mLabels=Object.keys(monthMap).sort();
+  const mRev=mLabels.map(m=>monthMap[m].rev);
+  const mHPP=mLabels.map(m=>monthMap[m].hpp);
+  const mCashIn=mLabels.map(m=>monthMap[m].cashIn);
+  const mCashOut=mLabels.map(m=>monthMap[m].cashOut);
+  const invByStatus=Object.entries(SC).map(([k,v])=>({l:v.l,v:invs.filter(i=>i.status===k).reduce((s,i)=>s+tot(i.items),0),c:v.c})).filter(x=>x.v>0);
+  const prodRev={};
+  invs.filter(i=>i.status==="paid").forEach(inv=>{inv.items.forEach(it=>{const p=prods.find(x=>x.id===it.productId);if(p){if(!prodRev[p.name])prodRev[p.name]=0;prodRev[p.name]+=it.qty*it.price;}});});
+  const topProds=Object.entries(prodRev).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  return (
+    <div>
+      {notif&&<div className="ntf" style={{background:notif.type==="err"?"#ef4444":"#10b981",color:"#fff"}}>{notif.msg}</div>}
+
+      {/* HEADER */}
+      <div style={{background:"#10131a",borderBottom:"1px solid #1e2438",padding:"0 16px",display:"flex",alignItems:"center",justifyContent:"space-between",height:58,position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:30,height:30,background:"linear-gradient(135deg,#1e90ff,#4facfe)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>💎</div>
+          <span style={{fontWeight:800,fontSize:15}}>FinanceOS</span>
+        </div>
+        <div style={{display:"flex",gap:2,overflowX:"auto"}}>
+          {[["dashboard","📊 Dash"],["invoice","🧾 Invoice"],["cashflow","💸 Kas"],["stock","📦 Stok"],["clients","👥 Klien"],["laporan","📑 Laporan"]].map(([k,l])=>(
+            <button key={k} className={"tab"+(tab===k?" on":"")} onClick={()=>sTab(k)}>{l}</button>
+          ))}
+        </div>
+        <div style={{position:"relative"}}>
+          <div onClick={()=>sLogout(!showLogout)} style={{width:34,height:34,background:"#1e2438",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,cursor:"pointer"}}>{user.avatar}</div>
+          {showLogout&&<div style={{position:"absolute",right:0,top:42,background:"#141720",border:"1px solid #1e2438",borderRadius:12,padding:14,minWidth:160,zIndex:200,boxShadow:"0 8px 32px #0008"}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{user.name}</div>
+            <div style={{fontSize:11,color:"#4facfe",marginBottom:12}}>{user.role}</div>
+            <button onClick={()=>{sUser(null);sLogout(false);}} style={{width:"100%",background:"#ef444418",border:"1px solid #ef444430",borderRadius:8,padding:"7px 12px",color:"#ef4444",fontSize:12,fontWeight:600,cursor:"pointer"}}>🚪 Keluar</button>
+          </div>}
+        </div>
+      </div>
+
+      {loading?(
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"70vh",flexDirection:"column",gap:12}}>
+          <div style={{width:36,height:36,border:"3px solid #1e2438",borderTop:"3px solid #4facfe",borderRadius:"50%",animation:"spin 1s linear infinite"}}></div>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <div style={{color:"#475569",fontSize:13}}>Memuat data...</div>
+        </div>
+      ):(
+      <div style={{padding:16,maxWidth:1100,margin:"0 auto"}}>
+
+        {/* DASHBOARD */}
+        {tab==="dashboard"&&(
+          <div>
+            <h2 style={{fontSize:18,fontWeight:800,marginBottom:16}}>Ringkasan Keuangan</h2>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
+              {[{l:"Total Pendapatan",v:fmt(rev),c:"#10b981",ic:"💰"},{l:"Laba Kotor",v:fmt(gp),c:"#4facfe",ic:"📈"},{l:"Kas Bersih",v:fmtS(netCash),c:netCash>=0?"#10b981":"#ef4444",ic:"💸"},{l:"Piutang",v:fmt(pend),c:"#f59e0b",ic:"⏳"}].map((k,i)=>(
+                <div key={i} className="card" style={{borderColor:k.c+"33"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}><span style={{fontSize:11,color:"#64748b"}}>{k.l}</span><span>{k.ic}</span></div>
+                  <div style={{fontSize:16,fontWeight:700,fontFamily:"JetBrains Mono",color:k.c}}>{k.v}</div>
+                </div>
+              ))}
+            </div>
+            {mLabels.length>0&&<div className="card" style={{marginBottom:14}}><div style={{fontWeight:600,fontSize:12,color:"#94a3b8",marginBottom:14}}>📈 Penjualan & Laba Bulanan</div><BarChart labels={mLabels} datasets={[{label:"Pendapatan",data:mRev,backgroundColor:"#10b98180",borderColor:"#10b981",borderWidth:2},{label:"HPP",data:mHPP,backgroundColor:"#ef444480",borderColor:"#ef4444",borderWidth:2}]} height={200}/></div>}
+            {mLabels.length>0&&<div className="card" style={{marginBottom:14}}><div style={{fontWeight:600,fontSize:12,color:"#94a3b8",marginBottom:14}}>💸 Arus Kas Bulanan</div><LineChart labels={mLabels} datasets={[{label:"Kas Masuk",data:mCashIn,borderColor:"#10b981",backgroundColor:"#10b98120"},{label:"Kas Keluar",data:mCashOut,borderColor:"#ef4444",backgroundColor:"#ef444420"}]} height={180}/></div>}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <div className="card"><div style={{fontWeight:600,fontSize:12,color:"#94a3b8",marginBottom:12}}>🧾 Status Invoice</div>
+                {invByStatus.length>0?<DoughnutChart labels={invByStatus.map(x=>x.l)} data={invByStatus.map(x=>x.v)} colors={invByStatus.map(x=>x.c)} height={160}/>:<div style={{color:"#475569",fontSize:12,textAlign:"center",padding:20}}>Belum ada invoice</div>}
+              </div>
+              <div className="card"><div style={{fontWeight:600,fontSize:12,color:"#94a3b8",marginBottom:12}}>🏆 Top Produk</div>
+                {topProds.length===0?<div style={{color:"#475569",fontSize:12,textAlign:"center",padding:20}}>Belum ada data</div>:topProds.map(([name,val],i)=>(
+                  <div key={i} style={{marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:4}}><span style={{color:"#cbd5e1",fontWeight:500}}>{i+1}. {name}</span><span style={{fontFamily:"JetBrains Mono",fontSize:10,color:"#10b981"}}>{fmt(val)}</span></div>
+                    <div style={{height:5,background:"#1a1d26",borderRadius:4}}><div style={{height:"100%",width:(val/(topProds[0][1]||1)*100)+"%",background:"linear-gradient(90deg,#1e90ff,#4facfe)",borderRadius:4}}/></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card"><div style={{fontWeight:600,fontSize:12,color:"#94a3b8",marginBottom:12}}>📦 Info Stok & Klien</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+                {[{l:"Total Produk",v:prods.length,c:"#4facfe"},{l:"Total Klien",v:clients.length,c:"#10b981"},{l:"Stok Rendah",v:prods.filter(p=>p.stock<=p.min_stock&&p.stock>0).length,c:"#f59e0b"},{l:"Stok Habis",v:prods.filter(p=>p.stock===0).length,c:"#ef4444"}].map((s,i)=>(
+                  <div key={i} style={{background:"#1a1d26",borderRadius:10,padding:"12px",textAlign:"center"}}>
+                    <div style={{fontSize:20,fontWeight:800,color:s.c,fontFamily:"JetBrains Mono"}}>{s.v}</div>
+                    <div style={{fontSize:11,color:"#64748b",marginTop:4}}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* INVOICE */}
+        {tab==="invoice"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <h2 style={{fontSize:18,fontWeight:800}}>Invoice</h2>
+              <div style={{display:"flex",gap:8}}>
+                <ExportBtn
+                  onExcel={()=>exportExcel(fInvs.map(i=>({ID:i.id,Klien:i.client,Tanggal:i.date,"Jatuh Tempo":i.due,Total:tot(i.items),Status:SC[i.status].l})),"invoice_export")}
+                  onPDF={()=>{}}
+                />
+                <button className="btn btn-p" onClick={()=>sIF(true)}>+ Buat Invoice</button>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+              {["all","paid","pending","overdue","draft"].map(s=>(
+                <button key={s} className="btn" onClick={()=>sFSt(s)} style={{fontSize:11,padding:"5px 10px",background:fSt===s?"#1e90ff18":"#1a1d26",color:fSt===s?"#4facfe":"#64748b"}}>
+                  {s==="all"?"Semua":SC[s].l} <span style={{background:"#1e2438",borderRadius:10,padding:"1px 5px",fontSize:9}}>{s==="all"?invs.length:invs.filter(i=>i.status===s).length}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,background:"#141720",borderRadius:12,overflow:"hidden",border:"1px solid #1e2438"}}>
+                <thead><tr style={{background:"#10131a"}}>{["ID","Klien","Tgl","Total","Status","Aksi"].map(h=><th key={h} style={{textAlign:"left",padding:"11px 12px",color:"#475569",fontWeight:500,fontSize:11,borderBottom:"1px solid #1e2438"}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {fInvs.map(inv=>(
+                    <tr key={inv.id} className="tr">
+                      <td style={{padding:"10px 12px",fontFamily:"JetBrains Mono",fontSize:10,color:"#4facfe",cursor:"pointer"}} onClick={()=>sSelInv(inv)}>{inv.id.slice(0,16)}...</td>
+                      <td style={{padding:"10px 12px",fontWeight:500}}>{inv.client}</td>
+                      <td style={{padding:"10px 12px",color:"#64748b",fontSize:11}}>{inv.date}</td>
+                      <td style={{padding:"10px 12px",fontFamily:"JetBrains Mono",color:"#10b981",fontWeight:700,fontSize:11}}>{fmt(tot(inv.items))}</td>
+                      <td style={{padding:"10px 12px"}}><span style={{display:"inline-block",padding:"3px 9px",borderRadius:20,fontSize:11,fontWeight:600,background:SC[inv.status].b,color:SC[inv.status].c}}>{SC[inv.status].l}</span></td>
+                      <td style={{padding:"10px 12px"}}>
+                        <div style={{display:"flex",gap:5}}>
+                          <select className="inp" style={{width:90,fontSize:10,padding:"4px 6px"}} value={inv.status} onChange={e=>updIS(inv.id,e.target.value)}>
+                            {Object.entries(SC).map(([k,v])=><option key={k} value={k}>{v.l}</option>)}
+                          </select>
+                          <button className="btn btn-r" style={{fontSize:10,padding:"4px 7px"}} onClick={()=>delInv(inv.id)}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {fInvs.length===0&&<div style={{textAlign:"center",padding:30,color:"#475569",fontSize:13}}>Tidak ada invoice</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ARUS KAS */}
+        {tab==="cashflow"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <h2 style={{fontSize:18,fontWeight:800}}>Arus Kas</h2>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <select className="inp" value={cfPer} onChange={e=>sCFPer(e.target.value)} style={{width:120,fontSize:12}}>
+                  {(months.length?months:[cfPer]).map(m=><option key={m} value={m}>{m}</option>)}
+                </select>
+                <ExportBtn onExcel={()=>exportExcel(perCash.map(c=>({Tanggal:c.date,Keterangan:c.description,Kategori:c.category,Tipe:c.type==="in"?"Masuk":"Keluar",Jumlah:c.amount,Sumber:c.auto?"Invoice":"Manual"})),"aruskas")} onPDF={()=>{}}/>
+                <button className="btn btn-p" onClick={()=>{sNCF({date:"",description:"",category:"Operasional",type:"out",amount:0});sEditCF(null);sCF(true);}}>+ Tambah</button>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
+              {[{l:"Masuk",v:cashIn,c:"#10b981"},{l:"Keluar",v:cashOut,c:"#ef4444"},{l:"Bersih",v:netCash,c:netCash>=0?"#10b981":"#ef4444"}].map((k,i)=>(
+                <div key={i} className="card" style={{borderColor:k.c+"33"}}>
+                  <div style={{fontSize:11,color:"#64748b",marginBottom:5}}>{k.l}</div>
+                  <div style={{fontSize:14,fontWeight:700,fontFamily:"JetBrains Mono",color:k.c}}>{fmtS(k.v)}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:5,marginBottom:10}}>
+              {[["all","Semua"],["in","Masuk"],["out","Keluar"]].map(([v,l])=>(
+                <button key={v} className="btn" onClick={()=>sCFType(v)} style={{fontSize:11,padding:"5px 10px",background:cfType===v?"#1e90ff18":"#1a1d26",color:cfType===v?"#4facfe":"#64748b"}}>{l}</button>
+              ))}
+            </div>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,background:"#141720",borderRadius:12,border:"1px solid #1e2438"}}>
+                <thead><tr style={{background:"#10131a"}}>{["Tgl","Keterangan","Kategori","Sumber","Tipe","Jumlah","Aksi"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",color:"#475569",fontWeight:500,fontSize:11,borderBottom:"1px solid #1e2438"}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {(cfType==="all"?perCash:perCash.filter(c=>c.type===cfType)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(c=>(
+                    <tr key={c.id} className="tr">
+                      <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontSize:10,color:"#64748b"}}>{c.date}</td>
+                      <td style={{padding:"9px 12px",fontSize:11}}>{c.description}{c.ref&&<div style={{fontSize:9,color:"#4facfe"}}>→ {c.ref}</div>}</td>
+                      <td style={{padding:"9px 12px"}}><span style={{background:"#1e2438",color:"#94a3b8",padding:"2px 7px",borderRadius:20,fontSize:10}}>{c.category}</span></td>
+                      <td style={{padding:"9px 12px",fontSize:11,color:c.auto?"#4facfe":"#64748b"}}>{c.auto?"🔗 Invoice":"✏️ Manual"}</td>
+                      <td style={{padding:"9px 12px"}}><span style={{display:"inline-block",padding:"3px 9px",borderRadius:20,fontSize:11,fontWeight:600,background:c.type==="in"?"#10b98120":"#ef444420",color:c.type==="in"?"#10b981":"#ef4444"}}>{c.type==="in"?"↑":"↓"}</span></td>
+                      <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontWeight:700,color:c.type==="in"?"#10b981":"#ef4444",fontSize:12}}>{c.type==="in"?"+":"-"}{fmt(c.amount)}</td>
+                      <td style={{padding:"9px 12px"}}>
+                        {!c.auto&&<div style={{display:"flex",gap:5}}>
+                          <button className="btn btn-g" style={{fontSize:10,padding:"3px 8px"}} onClick={()=>{sNCF({date:c.date,description:c.description,category:c.category,type:c.type,amount:c.amount});sEditCF(c);sCF(true);}}>Edit</button>
+                          <button className="btn btn-r" style={{fontSize:10,padding:"3px 7px"}} onClick={()=>delCF(c.id)}>🗑</button>
+                        </div>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* STOK */}
+        {tab==="stock"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <h2 style={{fontSize:18,fontWeight:800}}>Stok Barang</h2>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button className="btn" style={{background:"#10b98120",color:"#10b981",fontSize:12}} onClick={()=>{sNSM({productId:"",qty:0,note:"",type:"in"});setSMType("in");sSM(true);}}>📥 Masuk</button>
+                <button className="btn" style={{background:"#ef444420",color:"#ef4444",fontSize:12}} onClick={()=>{sNSM({productId:"",qty:0,note:"",type:"out"});setSMType("out");sSM(true);}}>📤 Keluar</button>
+                <button className="btn" style={{background:"#f59e0b20",color:"#f59e0b",fontSize:12}} onClick={()=>{sNSM({productId:"",qty:0,note:"",type:"opname"});setSMType("opname");sSM(true);}}>📋 Opname</button>
+                <ExportBtn onExcel={()=>exportExcel(prods.map(p=>({SKU:p.sku,Nama:p.name,Kategori:p.category,Stok:p.stock,"Harga Jual":p.price,HPP:p.cost})),"stok_barang")} onPDF={()=>{}}/>
+                <button className="btn btn-p" style={{fontSize:12}} onClick={()=>{sEditP(null);sNP({name:"",sku:"",category:"",stock:0,price:0,cost:0,min_stock:5});sPF(true);}}>+ Produk</button>
+              </div>
+            </div>
+            <input className="inp" placeholder="🔍 Cari nama/SKU..." value={srch} onChange={e=>sSrch(e.target.value)} style={{maxWidth:280,marginBottom:12}}/>
+            {prods.filter(p=>p.stock<=p.min_stock&&p.stock>0).length>0&&(
+              <div style={{background:"#f59e0b10",border:"1px solid #f59e0b20",borderRadius:10,padding:"9px 14px",marginBottom:12,fontSize:12,color:"#f59e0b"}}>
+                ⚠ Stok rendah: {prods.filter(p=>p.stock<=p.min_stock&&p.stock>0).map(p=>p.name).join(", ")}
+              </div>
+            )}
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,background:"#141720",borderRadius:12,border:"1px solid #1e2438"}}>
+                <thead><tr style={{background:"#10131a"}}>{["SKU","Nama","Kategori","Stok","Harga","Margin","Aksi"].map(h=><th key={h} style={{textAlign:"left",padding:"11px 12px",color:"#475569",fontWeight:500,fontSize:11,borderBottom:"1px solid #1e2438"}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {fProds.map(p=>{
+                    const mg=p.price>0?((p.price-p.cost)/p.price*100).toFixed(1):0;
+                    const sc=p.stock===0?"#ef4444":p.stock<=p.min_stock?"#f59e0b":"#10b981";
+                    return <tr key={p.id} className="tr">
+                      <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontSize:10,color:"#64748b"}}>{p.sku}</td>
+                      <td style={{padding:"9px 12px",fontWeight:600}}>{p.name}</td>
+                      <td style={{padding:"9px 12px"}}><span style={{background:"#1e2438",color:"#94a3b8",padding:"2px 7px",borderRadius:20,fontSize:10}}>{p.category}</span></td>
+                      <td style={{padding:"9px 12px"}}><span style={{fontWeight:700,color:sc,fontFamily:"JetBrains Mono"}}>{p.stock}</span>{p.stock===0&&<span style={{marginLeft:4,fontSize:9,color:"#ef4444",fontWeight:700}}>HABIS</span>}</td>
+                      <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",color:"#10b981",fontSize:11}}>{fmt(p.price)}</td>
+                      <td style={{padding:"9px 12px"}}><span style={{color:parseFloat(mg)>20?"#10b981":"#f59e0b",fontWeight:700}}>{mg}%</span></td>
+                      <td style={{padding:"9px 12px"}}>
+                        <div style={{display:"flex",gap:5}}>
+                          <button className="btn btn-g" style={{fontSize:10,padding:"4px 8px"}} onClick={()=>{sEditP(p);sNP({name:p.name,sku:p.sku,category:p.category||"",stock:p.stock,price:p.price,cost:p.cost,min_stock:p.min_stock});sPF(true);}}>Edit</button>
+                          <button className="btn btn-r" style={{fontSize:10,padding:"4px 7px"}} onClick={()=>delProd(p.id)}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
+              {fProds.length===0&&<div style={{textAlign:"center",padding:30,color:"#475569",fontSize:13}}>Belum ada produk</div>}
+            </div>
+            {moves.length>0&&(
+              <div style={{marginTop:20}}>
+                <div style={{fontWeight:600,fontSize:13,color:"#94a3b8",marginBottom:12}}>Riwayat Pergerakan Stok</div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,background:"#141720",borderRadius:12,border:"1px solid #1e2438"}}>
+                    <thead><tr style={{background:"#10131a"}}>{["Tgl","Produk","Tipe","Qty","Sebelum","Sesudah","Catatan","Aksi"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",color:"#475569",fontWeight:500,fontSize:11,borderBottom:"1px solid #1e2438"}}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {moves.slice(0,20).map(m=>(
+                        <tr key={m.id} className="tr">
+                          <td style={{padding:"9px 12px",color:"#64748b",fontSize:11}}>{m.date}</td>
+                          <td style={{padding:"9px 12px",fontWeight:500}}>{m.product_name}</td>
+                          <td style={{padding:"9px 12px"}}><span style={{display:"inline-block",padding:"2px 8px",borderRadius:20,fontSize:11,fontWeight:600,background:m.type==="in"?"#10b98120":m.type==="out"?"#ef444420":"#f59e0b20",color:m.type==="in"?"#10b981":m.type==="out"?"#ef4444":"#f59e0b"}}>{m.type==="in"?"📥":m.type==="out"?"📤":"📋"}</span></td>
+                          <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontWeight:700,color:m.type==="in"?"#10b981":m.type==="out"?"#ef4444":"#f59e0b"}}>{m.type==="in"?"+":m.type==="out"?"-":""}{m.qty}</td>
+                          <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",color:"#64748b"}}>{m.stock_before}</td>
+                          <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontWeight:700,color:"#4facfe"}}>{m.stock_after}</td>
+                          <td style={{padding:"9px 12px",color:"#64748b",fontSize:11}}>{m.note||"-"}</td>
+                          <td style={{padding:"9px 12px"}}>
+                            <div style={{display:"flex",gap:5}}>
+                              <button className="btn btn-g" style={{fontSize:10,padding:"3px 8px"}} onClick={()=>{sEditSM(m);sNSM({productId:String(m.product_id),qty:m.qty,note:m.note||"",type:m.type});setSMType(m.type);sSM(true);}}>Edit</button>
+                              <button className="btn btn-r" style={{fontSize:10,padding:"3px 7px"}} onClick={()=>delStockMove(m)}>🗑</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* KLIEN */}
+        {tab==="clients"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <h2 style={{fontSize:18,fontWeight:800}}>Manajemen Klien</h2>
+              <div style={{display:"flex",gap:8}}>
+                <ExportBtn onExcel={()=>exportExcel(clients.map(cl=>({Nama:cl.name,Telepon:cl.phone||"-",Alamat:cl.address||"-"})),"data_klien")} onPDF={()=>{}}/>
+                <button className="btn btn-p" onClick={()=>{sNCL({name:"",phone:"",address:""});sEditCL(null);sCLF(true);}}>+ Tambah Klien</button>
+              </div>
+            </div>
+            {clients.length===0?(
+              <div style={{textAlign:"center",padding:40,color:"#475569",fontSize:13}}><div style={{fontSize:40,marginBottom:12}}>👥</div><div>Belum ada klien.</div></div>
+            ):(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+                {clients.map(cl=>(
+                  <div key={cl.id} className="card">
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                      <div style={{width:40,height:40,background:"linear-gradient(135deg,#1e90ff,#4facfe)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🏢</div>
+                      <div style={{display:"flex",gap:5}}>
+                        <button className="btn btn-g" style={{fontSize:10,padding:"4px 8px"}} onClick={()=>{sNCL({name:cl.name,phone:cl.phone||"",address:cl.address||""});sEditCL(cl);sCLF(true);}}>Edit</button>
+                        <button className="btn btn-r" style={{fontSize:10,padding:"4px 8px"}} onClick={()=>delCL(cl.id)}>🗑</button>
+                      </div>
+                    </div>
+                    <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{cl.name}</div>
+                    {cl.phone&&<div style={{fontSize:12,color:"#64748b",marginBottom:2}}>📞 {cl.phone}</div>}
+                    {cl.address&&<div style={{fontSize:12,color:"#64748b"}}>📍 {cl.address}</div>}
+                    <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #1e2438",fontSize:11,color:"#475569"}}>
+                      {invs.filter(i=>i.client===cl.name).length} invoice • {fmt(invs.filter(i=>i.client===cl.name&&i.status==="paid").reduce((s,i)=>s+tot(i.items),0))} lunas
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* LAPORAN */}
+        {tab==="laporan"&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+              <div><h2 style={{fontSize:18,fontWeight:800}}>Laporan Laba Rugi</h2><p style={{fontSize:12,color:"#475569",marginTop:3}}>Periode: {lapPer}</p></div>
+              <div style={{display:"flex",gap:8}}>
+                <select className="inp" value={lapPer} onChange={e=>sLapPer(e.target.value)} style={{width:130,fontSize:12}}>
+                  {(months.length?months:[lapPer]).map(m=><option key={m} value={m}>{m}</option>)}
+                </select>
+                <ExportBtn onExcel={()=>exportExcel([{Keterangan:"Total Pendapatan",Jumlah:lapRev},{Keterangan:"HPP",Jumlah:-lapHPP},{Keterangan:"Laba Kotor",Jumlah:lapLK},{Keterangan:"Total Beban",Jumlah:-lapBeban},{Keterangan:"LABA BERSIH",Jumlah:lapLB}],"laporan_labarugi")} onPDF={()=>{}}/>
+              </div>
+            </div>
+            <div className="card" style={{marginBottom:12,borderColor:"#10b98122"}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#10b981",marginBottom:12}}>📈 Pendapatan</div>
+              {lapInvs.length===0?<div style={{color:"#475569",fontSize:12}}>Tidak ada pendapatan</div>:lapInvs.map(inv=>(
+                <div key={inv.id} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid #1e243820",fontSize:12}}>
+                  <span style={{color:"#94a3b8"}}>{inv.client}</span><span style={{fontFamily:"JetBrains Mono",color:"#10b981",fontWeight:600}}>{fmt(tot(inv.items))}</span>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:"2px solid #10b98130",fontWeight:700,fontSize:13}}>
+                <span>Total Pendapatan</span><span style={{fontFamily:"JetBrains Mono",color:"#10b981",fontSize:14}}>{fmt(lapRev)}</span>
+              </div>
+            </div>
+            <div className="card" style={{marginBottom:12,borderColor:"#ef444422"}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#ef4444",marginBottom:12}}>📉 HPP</div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"7px 0"}}><span style={{color:"#94a3b8"}}>Harga Pokok Penjualan</span><span style={{fontFamily:"JetBrains Mono",color:"#ef4444",fontWeight:600}}>({fmt(lapHPP)})</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:"2px solid #ef444430",fontWeight:700,fontSize:13}}>
+                <span>Total HPP</span><span style={{fontFamily:"JetBrains Mono",color:"#ef4444",fontSize:14}}>({fmt(lapHPP)})</span>
+              </div>
+            </div>
+            <div className="card" style={{marginBottom:12,background:"#10b98108",borderColor:"#10b98130"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontWeight:700,fontSize:14}}>Laba Kotor</span>
+                <span style={{fontFamily:"JetBrains Mono",fontWeight:800,color:lapLK>=0?"#10b981":"#ef4444",fontSize:16}}>{fmtS(lapLK)}</span>
+              </div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Margin: {lapRev>0?((lapLK/lapRev)*100).toFixed(1):0}%</div>
+            </div>
+            <div className="card" style={{marginBottom:12,borderColor:"#f59e0b22"}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#f59e0b",marginBottom:12}}>💸 Beban Operasional</div>
+              {lapCash.filter(c=>c.type==="out"&&!c.auto).length===0?<div style={{color:"#475569",fontSize:12}}>Tidak ada beban</div>:lapCash.filter(c=>c.type==="out"&&!c.auto).map(c=>(
+                <div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid #1e243820",fontSize:12}}>
+                  <span style={{color:"#94a3b8"}}>{c.description}</span><span style={{fontFamily:"JetBrains Mono",color:"#f59e0b",fontWeight:600}}>({fmt(c.amount)})</span>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:"2px solid #f59e0b30",fontWeight:700,fontSize:13}}>
+                <span>Total Beban</span><span style={{fontFamily:"JetBrains Mono",color:"#f59e0b",fontSize:14}}>({fmt(lapBeban)})</span>
+              </div>
+            </div>
+            <div className="card" style={{background:lapLB>=0?"#10b98112":"#ef444412",borderColor:lapLB>=0?"#10b98140":"#ef444440"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <span style={{fontWeight:800,fontSize:15}}>Laba Bersih</span>
+                <span style={{fontFamily:"JetBrains Mono",fontWeight:800,color:lapLB>=0?"#10b981":"#ef4444",fontSize:20}}>{fmtS(lapLB)}</span>
+              </div>
+              <div style={{fontSize:11,color:"#64748b"}}>Periode {lapPer} • {lapLB>=0?"✅ Profit":"❌ Rugi"}</div>
+            </div>
+          </div>
+        )}
+
+      </div>
+      )}
+
+      {/* MODAL Invoice Detail */}
+      {selInv&&(
+        <div className="mbg" onClick={()=>sSelInv(null)}>
+          <div className="mod" onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}>
+              <div><div style={{fontFamily:"JetBrains Mono",color:"#4facfe",fontSize:11,marginBottom:3}}>{selInv.id}</div><div style={{fontWeight:700,fontSize:16}}>{selInv.client}</div></div>
+              <button className="btn btn-g" style={{height:32}} onClick={()=>sSelInv(null)}>✕</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              <div style={{background:"#1a1d26",borderRadius:8,padding:10}}><div style={{fontSize:11,color:"#64748b",marginBottom:3}}>Tanggal</div><div style={{fontWeight:600}}>{selInv.date}</div></div>
+              <div style={{background:"#1a1d26",borderRadius:8,padding:10}}><div style={{fontSize:11,color:"#64748b",marginBottom:3}}>Jatuh Tempo</div><div style={{fontWeight:600}}>{selInv.due||"-"}</div></div>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
+              <thead><tr style={{background:"#1a1d26"}}>{["Produk","Qty","Harga","Subtotal"].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#64748b",fontSize:11}}>{h}</th>)}</tr></thead>
+              <tbody>{(selInv.items||[]).map((it,i)=>{const p=prods.find(x=>x.id===it.productId);return<tr key={i} style={{borderBottom:"1px solid #1e2438"}}><td style={{padding:"8px 10px"}}>{p?p.name:"?"}</td><td style={{padding:"8px 10px",fontFamily:"JetBrains Mono"}}>{it.qty}</td><td style={{padding:"8px 10px",fontFamily:"JetBrains Mono"}}>{fmt(it.price)}</td><td style={{padding:"8px 10px",fontFamily:"JetBrains Mono",color:"#10b981",fontWeight:700}}>{fmt(it.qty*it.price)}</td></tr>;})}</tbody>
+            </table>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <button className="btn btn-p" style={{fontSize:12}} onClick={()=>printInv(selInv)}>🖨️ Export PDF</button>
+              <div style={{fontFamily:"JetBrains Mono",fontWeight:700,color:"#10b981",fontSize:16}}>Total: {fmt(tot(selInv.items))}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL Buat Invoice */}
+      {showIF&&(
+        <div className="mbg" onClick={()=>sIF(false)}>
+          <div className="mod" onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:16}}>Buat Invoice Baru</div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Klien</label>
+              {clients.length>0?(
+                <select className="inp" value={nInv.clientId} onChange={e=>{const cl=clients.find(x=>x.id===parseInt(e.target.value));sNInv(p=>({...p,clientId:e.target.value,client:cl?cl.name:""}))}}>
+                  <option value="">Pilih klien...</option>
+                  {clients.map(cl=><option key={cl.id} value={cl.id}>{cl.name}</option>)}
+                </select>
+              ):(
+                <input className="inp" placeholder="Nama klien..." value={nInv.client} onChange={e=>sNInv(p=>({...p,client:e.target.value}))}/>
+              )}
+              {clients.length>0&&<input className="inp" style={{marginTop:6}} placeholder="Atau ketik manual..." value={nInv.client} onChange={e=>sNInv(p=>({...p,client:e.target.value,clientId:""}))}/>}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Jatuh Tempo</label><input className="inp" type="date" value={nInv.due} onChange={e=>sNInv(p=>({...p,due:e.target.value}))}/></div>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Status</label>
+                <select className="inp" value={nInv.status} onChange={e=>sNInv(p=>({...p,status:e.target.value}))}>
+                  {Object.entries(SC).map(([k,v])=><option key={k} value={k}>{v.l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{background:"#1a1d26",borderRadius:10,padding:12,marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:600,marginBottom:8,color:"#94a3b8"}}>Tambah Item</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 70px auto",gap:8}}>
+                <select className="inp" value={invItem.productId} onChange={e=>sII(p=>({...p,productId:e.target.value}))}>
+                  <option value="">Pilih produk...</option>
+                  {prods.map(p=><option key={p.id} value={p.id}>{p.name} (stok: {p.stock})</option>)}
+                </select>
+                <input className="inp" type="number" min="1" value={invItem.qty} onChange={e=>sII(p=>({...p,qty:e.target.value}))}/>
+                <button className="btn btn-p" onClick={addII}>+</button>
+              </div>
+            </div>
+            {nInv.items.length>0&&(
+              <div style={{marginBottom:12}}>
+                {nInv.items.map((it,i)=>{const p=prods.find(x=>x.id===it.productId);return<div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:"#1a1d26",borderRadius:7,marginBottom:4,fontSize:12}}><span>{p?p.name:"?"}</span><span style={{color:"#64748b"}}>×{it.qty}</span><span style={{color:"#10b981",fontFamily:"JetBrains Mono"}}>{fmt(it.qty*it.price)}</span></div>;})}
+                <div style={{textAlign:"right",fontWeight:700,fontFamily:"JetBrains Mono",color:"#10b981",marginTop:6}}>Total: {fmt(nInv.items.reduce((s,i)=>s+i.qty*i.price,0))}</div>
+              </div>
+            )}
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button className="btn btn-g" onClick={()=>sIF(false)}>Batal</button>
+              <button className="btn btn-p" onClick={saveInv}>Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL Tambah/Edit Klien */}
+      {showCLF&&(
+        <div className="mbg" onClick={()=>{sCLF(false);sEditCL(null);}}>
+          <div className="mod" onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:16}}>{editCL?"Edit Klien":"Tambah Klien Baru"}</div>
+            {[["Nama Klien *","name","text","PT / CV / Nama..."],["No. Telepon","phone","text","08..."],["Alamat","address","text","Jl. ..."]].map(([lb,f,t,ph])=>(
+              <div key={f} style={{marginBottom:12}}>
+                <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>{lb}</label>
+                <input className="inp" type={t} placeholder={ph} value={nCL[f]} onChange={e=>sNCL(p=>({...p,[f]:e.target.value}))}/>
+              </div>
+            ))}
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button className="btn btn-g" onClick={()=>{sCLF(false);sEditCL(null);}}>Batal</button>
+              <button className="btn btn-p" onClick={saveCL}>{editCL?"Update":"Simpan"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL Tambah Produk */}
+      {showPF&&(
+        <div className="mbg" onClick={()=>sPF(false)}>
+          <div className="mod" onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:16}}>{editP?"Edit Produk":"Tambah Produk"}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              {[["Nama *","name","text","Nama produk..."],["SKU *","sku","text","Kode SKU..."],["Kategori","category","text","Elektronik..."],["Stok","stock","number","0"],["Min Stok","min_stock","number","5"],["Harga Jual","price","number","0"],["HPP","cost","number","0"]].map(([lb,f,t,ph])=>(
+                <div key={f}>
+                  <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>{lb}</label>
+                  <input className="inp" type={t} placeholder={ph} value={nP[f]} onChange={e=>sNP(p=>({...p,[f]:t==="number"?parseInt(e.target.value)||0:e.target.value}))}/>
+                </div>
+              ))}
+            </div>
+            {nP.price>0&&nP.cost>0&&<div style={{background:"#10b98110",border:"1px solid #10b98120",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:12,color:"#10b981"}}>Margin: {((nP.price-nP.cost)/nP.price*100).toFixed(1)}% — Laba/unit: {fmt(nP.price-nP.cost)}</div>}
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button className="btn btn-g" onClick={()=>sPF(false)}>Batal</button>
+              <button className="btn btn-p" onClick={saveProd}>{editP?"Update":"Simpan"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL Arus Kas */}
+      {showCF&&(
+        <div className="mbg" onClick={()=>{sCF(false);sEditCF(null);}}>
+          <div className="mod" onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:16}}>{editCF?"Edit Entri Arus Kas":"Tambah Entri Arus Kas"}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Tanggal</label><input className="inp" type="date" value={nCF.date} onChange={e=>sNCF(p=>({...p,date:e.target.value}))}/></div>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Tipe</label>
+                <select className="inp" value={nCF.type} onChange={e=>sNCF(p=>({...p,type:e.target.value}))}>
+                  <option value="in">↑ Kas Masuk</option><option value="out">↓ Kas Keluar</option>
+                </select>
+              </div>
+            </div>
+            <div style={{marginBottom:12}}><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Keterangan</label><input className="inp" placeholder="Deskripsi..." value={nCF.description} onChange={e=>sNCF(p=>({...p,description:e.target.value}))}/></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Kategori</label>
+                <select className="inp" value={nCF.category} onChange={e=>sNCF(p=>({...p,category:e.target.value}))}>
+                  {CATS.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Jumlah (Rp)</label><input className="inp" type="number" min="0" value={nCF.amount||""} onChange={e=>sNCF(p=>({...p,amount:parseInt(e.target.value)||0}))}/></div>
+            </div>
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button className="btn btn-g" onClick={()=>{sCF(false);sEditCF(null);}}>Batal</button>
+              <button className="btn btn-p" onClick={saveCF}>{editCF?"Update":"Simpan"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL Stok */}
+      {showSM&&(
+        <div className="mbg" onClick={()=>{sSM(false);sEditSM(null);}}>
+          <div className="mod" onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>{editSM?"✏️ Edit Riwayat Stok":smType==="in"?"📥 Stok Masuk":smType==="out"?"📤 Stok Keluar":"📋 Stok Opname"}</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:16}}>{smType==="in"?"Tambah stok masuk":smType==="out"?"Kurangi stok keluar":"Sesuaikan stok aktual"}</div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Pilih Produk</label>
+              <select className="inp" value={nSM.productId} onChange={e=>sNSM(p=>({...p,productId:e.target.value}))}>
+                <option value="">Pilih produk...</option>
+                {prods.map(p=><option key={p.id} value={p.id}>{p.name} — Stok: {p.stock}</option>)}
+              </select>
+            </div>
+            {nSM.productId&&<div style={{background:"#1a1d26",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12}}><span style={{color:"#64748b"}}>Stok saat ini: </span><span style={{fontFamily:"JetBrains Mono",fontWeight:700,color:"#4facfe",fontSize:14}}>{prods.find(x=>x.id===parseInt(nSM.productId))?.stock||0}</span></div>}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>{smType==="opname"?"Stok Aktual":"Jumlah"}</label><input className="inp" type="number" min="0" value={nSM.qty||""} onChange={e=>sNSM(p=>({...p,qty:parseInt(e.target.value)||0}))}/></div>
+              <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Catatan</label><input className="inp" placeholder="Opsional..." value={nSM.note} onChange={e=>sNSM(p=>({...p,note:e.target.value}))}/></div>
+            </div>
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button className="btn btn-g" onClick={()=>{sSM(false);sEditSM(null);}}>Batal</button>
+              <button className="btn btn-p" onClick={saveStockMove}>Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
