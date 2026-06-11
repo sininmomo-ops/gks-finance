@@ -296,7 +296,7 @@ function App() {
     } catch(e){notify("Gagal: "+e.message,"err");}
   };
 
-  const delCF=async id=>{try{await api.del("cash_entries",id);await loadAll();notify("Dihapus.");}catch(e){notify("Gagal!","err");}};
+  const delCF=async id=>{if(!window.confirm('Hapus entri kas ini? Data tidak dapat dikembalikan.'))return;try{await api.del("cash_entries",id);await loadAll();notify("Entri kas dihapus.");}catch(e){notify("Gagal menghapus!","err");}};
 
   const saveCL=async()=>{
     if(!nCL.name) return notify("Nama klien wajib!","err");
@@ -553,15 +553,19 @@ function App() {
                       <td style={{padding:"9px 12px"}}><span style={{display:"inline-block",padding:"3px 9px",borderRadius:20,fontSize:11,fontWeight:600,background:c.type==="in"?"#10b98120":"#ef444420",color:c.type==="in"?"#10b981":"#ef4444"}}>{c.type==="in"?"↑":"↓"}</span></td>
                       <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontWeight:700,color:c.type==="in"?"#10b981":"#ef4444",fontSize:12}}>{c.type==="in"?"+":"-"}{fmt(c.amount)}</td>
                       <td style={{padding:"9px 12px"}}>
-                        {!c.auto&&<div style={{display:"flex",gap:5}}>
-                          <button className="btn btn-g" style={{fontSize:10,padding:"3px 8px"}} onClick={()=>{sNCF({date:c.date,description:c.description,category:c.category,type:c.type,amount:c.amount});sEditCF(c);sCF(true);}}>Edit</button>
-                          <button className="btn btn-r" style={{fontSize:10,padding:"3px 7px"}} onClick={()=>delCF(c.id)}>🗑</button>
-                        </div>}
+                        {c.auto
+                          ? <span title="Entri otomatis dari Invoice. Edit di menu Invoice." style={{fontSize:10,color:"#1e2438",background:"#1e2438",borderRadius:6,padding:"2px 8px",cursor:"default",userSelect:"none",border:"1px solid #2a3050",color:"#475569"}}>🔒 Invoice</span>
+                          : <div style={{display:"flex",gap:5}}>
+                              <button className="btn btn-g" style={{fontSize:10,padding:"3px 10px"}} title="Edit entri ini" onClick={()=>{sNCF({date:c.date,description:c.description,category:c.category,type:c.type,amount:c.amount});sEditCF(c);sCF(true);}}>✏️ Edit</button>
+                              <button className="btn btn-r" style={{fontSize:10,padding:"3px 9px"}} title="Hapus entri ini" onClick={()=>delCF(c.id)}>🗑 Hapus</button>
+                            </div>
+                        }
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {(cfType==="all"?perCash:perCash.filter(c=>c.type===cfType)).length===0&&<div style={{textAlign:"center",padding:30,color:"#475569",fontSize:13}}>Tidak ada entri kas untuk periode ini</div>}
             </div>
           </div>
         )}
