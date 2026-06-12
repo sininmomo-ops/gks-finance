@@ -659,22 +659,28 @@ function App() {
                 <button key={v} className="btn" onClick={()=>sCFType(v)} style={{fontSize:11,padding:"5px 10px",background:cfType===v?"#1e90ff18":"#1a1d26",color:cfType===v?"#4facfe":"#64748b"}}>{l}</button>
               ))}
             </div>
-            <div style={{overflowX:"auto"}}>
+            <div>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,background:"#141720",borderRadius:12,border:"1px solid #1e2438"}}>
-                <thead><tr style={{background:"#10131a"}}>{["Tgl","Keterangan","Kategori","Sumber","Tipe","Jumlah","Aksi"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",color:"#475569",fontWeight:500,fontSize:11,borderBottom:"1px solid #1e2438"}}>{h}</th>)}</tr></thead>
+                <thead><tr style={{background:"#10131a"}}>{["Tgl / Ket","Jumlah","Aksi"].map(h=><th key={h} style={{textAlign:"left",padding:"10px 12px",color:"#475569",fontWeight:500,fontSize:11,borderBottom:"1px solid #1e2438"}}>{h}</th>)}</tr></thead>
                 <tbody>
                   {(cfType==="all"?perCash:perCash.filter(c=>c.type===cfType)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).map(c=>(
                     <tr key={c.id} className="tr">
-                      <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontSize:10,color:"#64748b"}}>{c.date}</td>
-                      <td style={{padding:"9px 12px",fontSize:11}}>{c.description}{c.ref&&<div style={{fontSize:9,color:"#4facfe"}}>→ {c.ref}</div>}</td>
-                      <td style={{padding:"9px 12px"}}><span style={{background:"#1e2438",color:"#94a3b8",padding:"2px 7px",borderRadius:20,fontSize:10}}>{c.category}</span></td>
-                      <td style={{padding:"9px 12px",fontSize:11,color:c.auto?"#4facfe":"#64748b"}}>{c.auto?"🔗 Invoice":"✏️ Manual"}</td>
-                      <td style={{padding:"9px 12px"}}><span style={{display:"inline-block",padding:"3px 9px",borderRadius:20,fontSize:11,fontWeight:600,background:c.type==="in"?"#10b98120":"#ef444420",color:c.type==="in"?"#10b981":"#ef4444"}}>{c.type==="in"?"↑":"↓"}</span></td>
-                      <td style={{padding:"9px 12px",fontFamily:"JetBrains Mono",fontWeight:700,color:c.type==="in"?"#10b981":"#ef4444",fontSize:12}}>{c.type==="in"?"+":"-"}{fmt(c.amount)}</td>
-                      <td style={{padding:"9px 12px"}}>
-                        <div style={{display:"flex",gap:5}}>
-                          <button className="btn btn-g" style={{fontSize:10,padding:"3px 10px"}} onClick={()=>{sNCF({date:c.date,description:c.description,category:c.category,type:c.type,amount:c.amount});sEditCF(c);sCF(true);}}>✏️ Edit</button>
-                          <button className="btn btn-r" style={{fontSize:10,padding:"3px 9px"}} onClick={()=>delCF(c)}>🗑 Hapus</button>
+                      <td style={{padding:"9px 12px",maxWidth:160}}>
+                        <div style={{fontFamily:"JetBrains Mono",fontSize:10,color:"#64748b",marginBottom:2}}>{c.date}</div>
+                        <div style={{fontSize:11,fontWeight:500,color:"#e2e8f0",marginBottom:3}}>{c.description}</div>
+                        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                          <span style={{background:"#1e2438",color:"#94a3b8",padding:"1px 6px",borderRadius:20,fontSize:9}}>{c.category}</span>
+                          <span style={{fontSize:9,color:c.auto?"#4facfe":"#64748b"}}>{c.auto?"🔗 Invoice":"✏️ Manual"}</span>
+                        </div>
+                      </td>
+                      <td style={{padding:"9px 12px",whiteSpace:"nowrap"}}>
+                        <span style={{display:"inline-block",padding:"2px 7px",borderRadius:20,fontSize:10,fontWeight:600,background:c.type==="in"?"#10b98120":"#ef444420",color:c.type==="in"?"#10b981":"#ef4444",marginBottom:3}}>{c.type==="in"?"↑ Masuk":"↓ Keluar"}</span>
+                        <div style={{fontFamily:"JetBrains Mono",fontWeight:700,color:c.type==="in"?"#10b981":"#ef4444",fontSize:11}}>{c.type==="in"?"+":"-"}{fmt(c.amount)}</div>
+                      </td>
+                      <td style={{padding:"9px 8px",whiteSpace:"nowrap"}}>
+                        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                          <button className="btn btn-g" style={{fontSize:10,padding:"4px 10px"}} onClick={()=>{sNCF({date:c.date,description:c.description,category:c.category,type:c.type,amount:c.amount});sEditCF(c);sCF(true);}}>✏️ Edit</button>
+                          <button className="btn btn-r" style={{fontSize:10,padding:"4px 10px"}} onClick={()=>delCF(c)}>🗑 Hapus</button>
                         </div>
                       </td>
                     </tr>
