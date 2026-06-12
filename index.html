@@ -389,19 +389,20 @@ function App() {
     try {
       if(editCF){
         if(editCF.auto){
-          // Entri otomatis dari Invoice — simpan sebagai override manual di cash_entries
-          await api.post("cash_entries",{id:"CF-OVR-"+editCF.id+"-"+Date.now(),date:nCF.date,description:nCF.description,category:nCF.category,type:nCF.type,amount:nCF.amount,ref:editCF.ref||null});
-          notify("Entri disalin & diperbarui sebagai manual!");
+          // Entri auto dari Invoice tidak ada di cash_entries, simpan sebagai entri manual baru
+          const newId="CF-"+Date.now();
+          await api.post("cash_entries",{id:newId,date:nCF.date,description:nCF.description,category:nCF.category,type:nCF.type,amount:nCF.amount,ref:null});
+          notify("Disimpan sebagai entri manual baru!");
         } else {
           await api.patch("cash_entries",editCF.id,{date:nCF.date,description:nCF.description,category:nCF.category,type:nCF.type,amount:nCF.amount});
-          notify("Entri diperbarui!");
+          notify("Entri berhasil diperbarui!");
         }
       } else {
         await api.post("cash_entries",{id:"CF-"+Date.now(),date:nCF.date,description:nCF.description,category:nCF.category,type:nCF.type,amount:nCF.amount,ref:null});
         notify("Entri ditambahkan!");
       }
       await loadAll(); sNCF({date:"",description:"",category:"Operasional",type:"out",amount:0}); sEditCF(null); sCF(false);
-    } catch(e){notify("Gagal: "+e.message,"err");}
+    } catch(e){notify("Gagal menyimpan: "+e.message,"err");}
   };
 
   const delCF=async(c)=>{
@@ -985,7 +986,12 @@ function App() {
       {showCF&&(
         <div className="mbg" onClick={()=>{sCF(false);sEditCF(null);}}>
           <div className="mod" onClick={e=>e.stopPropagation()}>
-            <div style={{fontWeight:700,fontSize:16,marginBottom:16}}>{editCF?"Edit Entri Arus Kas":"Tambah Entri Arus Kas"}</div>
+            <div style={{fontWeight:700,fontSize:16,marginBottom:12}}>{editCF?"Edit Entri Kas":"Tambah Entri Kas"}</div>
+            {editCF&&editCF.auto&&(
+              <div style={{background:"#f59e0b15",border:"1px solid #f59e0b40",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:"#f59e0b"}}>
+                ⚠️ Entri ini dari Invoice otomatis. Perubahan akan disimpan sebagai entri manual baru.
+              </div>
+            )}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Tanggal</label><input className="inp" type="date" value={nCF.date} onChange={e=>sNCF(p=>({...p,date:e.target.value}))}/></div>
               <div><label style={{fontSize:11,color:"#64748b",display:"block",marginBottom:5}}>Tipe</label>
