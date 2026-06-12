@@ -132,9 +132,12 @@ function PrintInvoice({inv,prods,onClose}) {
       <div style={{maxWidth:720,margin:"32px auto",padding:"40px 48px",fontFamily:"Segoe UI,sans-serif",color:"#1e293b",background:"#fff"}}>
         {/* Header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:36,paddingBottom:24,borderBottom:"2px solid #e2e8f0"}}>
-          <div>
-            <div style={{fontSize:22,fontWeight:800,color:"#1e90ff",letterSpacing:"-0.5px"}}>GLOBAL KARUNIA SUPPLY</div>
-            <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Finance Dashboard</div>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImN5YW5HcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwQjREOCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDc3QjYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9Im1hZ2VudGFHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0UwNDBGQiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNDMjE4NUIiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InllbGxvd0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENjAwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGQTAwMCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmdHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzBhMGEwYSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxYTFhMmUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJhckdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgICBzdHlsZT0ic3RvcC1jb2xvcjojMDBCNEQ4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiAgc3R5bGU9InN0b3AtY29sb3I6I0UwNDBGQiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkQ2MDAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNteWtSaW5nIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiICAgc3R5bGU9InN0b3AtY29sb3I6IzAwQjREOCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjMzJSIgIHN0eWxlPSJzdG9wLWNvbG9yOiNFMDQwRkIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI2NiUiICBzdHlsZT0ic3RvcC1jb2xvcjojRkZENjAwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwQjREOCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9InNoYWRvdyI+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAiIGR5PSI2IiBzdGREZXZpYXRpb249IjEwIiBmbG9vZC1jb2xvcj0iIzAwMDAwMDk5Ii8+CiAgICA8L2ZpbHRlcj4KICAgIDxmaWx0ZXIgaWQ9Imdsb3dDIj4KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMyIgcmVzdWx0PSJibHVyIi8+CiAgICAgIDxmZU1lcmdlPjxmZU1lcmdlTm9kZSBpbj0iYmx1ciIvPjxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPjwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogICAgPGZpbHRlciBpZD0iZ2xvd00iPgogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIzIiByZXN1bHQ9ImJsdXIiLz4KICAgICAgPGZlTWVyZ2U+PGZlTWVyZ2VOb2RlIGluPSJibHVyIi8+PGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+PC9mZU1lcmdlPgogICAgPC9maWx0ZXI+CiAgICA8ZmlsdGVyIGlkPSJnbG93WSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjMiIHJlc3VsdD0iYmx1ciIvPgogICAgICA8ZmVNZXJnZT48ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz48ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz48L2ZlTWVyZ2U+CiAgICA8L2ZpbHRlcj4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxOTIiIGZpbGw9InVybCgjYmdHcmFkKSIgZmlsdGVyPSJ1cmwoI3NoYWRvdykiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyMDAiIHI9IjE4NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2NteWtSaW5nKSIgc3Ryb2tlLXdpZHRoPSI1IiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBhdGggZD0iTSA2OCAxMzAgQSAxNDggMTQ4IDAgMCAxIDE0MCA1NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBCNEQ4IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC45Ii8+CiAgPHBhdGggZD0iTSAyNjAgNTUgQSAxNDggMTQ4IDAgMCAxIDMzMiAxMzAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UwNDBGQiIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuOSIvPgogIDxwYXRoIGQ9Ik0gMzMyIDI3MCBBIDE0OCAxNDggMCAwIDEgNjggMjcwIiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkQ2MDAiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjkiLz4KICA8dGV4dCB4PSIxMTgiIHk9IjIzMiIgZm9udC1mYW1pbHk9IidBcmlhbCBCbGFjaycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ1cmwoI2N5YW5HcmFkKSIgZmlsdGVyPSJ1cmwoI2dsb3dDKSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RzwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjIzMiIgZm9udC1mYW1pbHk9IidBcmlhbCBCbGFjaycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ1cmwoI21hZ2VudGFHcmFkKSIgZmlsdGVyPSJ1cmwoI2dsb3dNKSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SzwvdGV4dD4KICA8dGV4dCB4PSIyODIiIHk9IjIzMiIgZm9udC1mYW1pbHk9IidBcmlhbCBCbGFjaycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ1cmwoI3llbGxvd0dyYWQpIiBmaWx0ZXI9InVybCgjZ2xvd1kpIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TPC90ZXh0PgogIDxyZWN0IHg9IjkwIiB5PSIyNDYiIHdpZHRoPSIyMjAiIGhlaWdodD0iNCIgcng9IjIiIGZpbGw9InVybCgjYmFyR3JhZCkiIG9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4=" style={{width:56,height:56,borderRadius:12,objectFit:"cover",flexShrink:0}} alt="GKS"/>
+            <div>
+              <div style={{fontSize:18,fontWeight:800,letterSpacing:1}}><span style={{color:"#00B4D8"}}>GLOBAL</span> <span style={{color:"#C2185B"}}>KARUNIA</span> <span style={{color:"#FFA000"}}>SUPPLY</span></div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2,letterSpacing:"0.5px"}}>Finance Dashboard</div>
+            </div>
           </div>
           <div style={{textAlign:"right"}}>
             <div style={{fontSize:28,fontWeight:900,letterSpacing:2,color:"#0f172a"}}>INVOICE</div>
@@ -200,8 +203,8 @@ function PrintInvoice({inv,prods,onClose}) {
         {/* Footer */}
         <div style={{borderTop:"1px solid #e2e8f0",paddingTop:20,display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
           <div style={{fontSize:11,color:"#94a3b8"}}>
-            <div>Global Karunia Supply</div>
-            <div style={{marginTop:2}}>Finance Dashboard — Dicetak {new Date().toLocaleDateString("id-ID")}</div>
+            <div style={{fontWeight:700}}><span style={{color:"#00B4D8"}}>GLOBAL</span> <span style={{color:"#C2185B"}}>KARUNIA</span> <span style={{color:"#FFA000"}}>SUPPLY</span></div>
+            <div style={{marginTop:2}}>Dicetak {new Date().toLocaleDateString("id-ID")}</div>
           </div>
           <div style={{textAlign:"center"}}>
             <div style={{borderTop:"1px solid #cbd5e1",width:160,paddingTop:6,fontSize:11,color:"#64748b"}}>Tanda Tangan & Stempel</div>
@@ -592,7 +595,59 @@ function App() {
               <div style={{display:"flex",gap:8}}>
                 <ExportBtn
                   onExcel={()=>exportExcel(fInvs.map(i=>({ID:i.id,Klien:i.client,Tanggal:i.date,"Jatuh Tempo":i.due,Total:tot(i.items),Status:SC[i.status].l})),"invoice_export")}
-                  onPDF={()=>{}}
+                  onPDF={()=>{
+                    const GKS_LOGO = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImN5YW5HcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwQjREOCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDc3QjYiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9Im1hZ2VudGFHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0UwNDBGQiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNDMjE4NUIiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InllbGxvd0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkZENjAwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGQTAwMCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmdHcmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzBhMGEwYSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMxYTFhMmUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJhckdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgICBzdHlsZT0ic3RvcC1jb2xvcjojMDBCNEQ4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiAgc3R5bGU9InN0b3AtY29sb3I6I0UwNDBGQiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNGRkQ2MDAiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNteWtSaW5nIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiICAgc3R5bGU9InN0b3AtY29sb3I6IzAwQjREOCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjMzJSIgIHN0eWxlPSJzdG9wLWNvbG9yOiNFMDQwRkIiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI2NiUiICBzdHlsZT0ic3RvcC1jb2xvcjojRkZENjAwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwQjREOCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9InNoYWRvdyI+CiAgICAgIDxmZURyb3BTaGFkb3cgZHg9IjAiIGR5PSI2IiBzdGREZXZpYXRpb249IjEwIiBmbG9vZC1jb2xvcj0iIzAwMDAwMDk5Ii8+CiAgICA8L2ZpbHRlcj4KICAgIDxmaWx0ZXIgaWQ9Imdsb3dDIj4KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMyIgcmVzdWx0PSJibHVyIi8+CiAgICAgIDxmZU1lcmdlPjxmZU1lcmdlTm9kZSBpbj0iYmx1ciIvPjxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPjwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogICAgPGZpbHRlciBpZD0iZ2xvd00iPgogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIzIiByZXN1bHQ9ImJsdXIiLz4KICAgICAgPGZlTWVyZ2U+PGZlTWVyZ2VOb2RlIGluPSJibHVyIi8+PGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+PC9mZU1lcmdlPgogICAgPC9maWx0ZXI+CiAgICA8ZmlsdGVyIGlkPSJnbG93WSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjMiIHJlc3VsdD0iYmx1ciIvPgogICAgICA8ZmVNZXJnZT48ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz48ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz48L2ZlTWVyZ2U+CiAgICA8L2ZpbHRlcj4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSIxOTIiIGZpbGw9InVybCgjYmdHcmFkKSIgZmlsdGVyPSJ1cmwoI3NoYWRvdykiLz4KICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyMDAiIHI9IjE4NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2NteWtSaW5nKSIgc3Ryb2tlLXdpZHRoPSI1IiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBhdGggZD0iTSA2OCAxMzAgQSAxNDggMTQ4IDAgMCAxIDE0MCA1NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBCNEQ4IiBzdHJva2Utd2lkdGg9IjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC45Ii8+CiAgPHBhdGggZD0iTSAyNjAgNTUgQSAxNDggMTQ4IDAgMCAxIDMzMiAxMzAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UwNDBGQiIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuOSIvPgogIDxwYXRoIGQ9Ik0gMzMyIDI3MCBBIDE0OCAxNDggMCAwIDEgNjggMjcwIiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkQ2MDAiIHN0cm9rZS13aWR0aD0iNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjkiLz4KICA8dGV4dCB4PSIxMTgiIHk9IjIzMiIgZm9udC1mYW1pbHk9IidBcmlhbCBCbGFjaycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ1cmwoI2N5YW5HcmFkKSIgZmlsdGVyPSJ1cmwoI2dsb3dDKSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RzwvdGV4dD4KICA8dGV4dCB4PSIyMDAiIHk9IjIzMiIgZm9udC1mYW1pbHk9IidBcmlhbCBCbGFjaycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ1cmwoI21hZ2VudGFHcmFkKSIgZmlsdGVyPSJ1cmwoI2dsb3dNKSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SzwvdGV4dD4KICA8dGV4dCB4PSIyODIiIHk9IjIzMiIgZm9udC1mYW1pbHk9IidBcmlhbCBCbGFjaycsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEwIiBmb250LXdlaWdodD0iOTAwIiBmaWxsPSJ1cmwoI3llbGxvd0dyYWQpIiBmaWx0ZXI9InVybCgjZ2xvd1kpIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TPC90ZXh0PgogIDxyZWN0IHg9IjkwIiB5PSIyNDYiIHdpZHRoPSIyMjAiIGhlaWdodD0iNCIgcng9IjIiIGZpbGw9InVybCgjYmFyR3JhZCkiIG9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4=`;
+                    const fmt2 = n => "Rp "+Math.abs(n||0).toLocaleString("id-ID");
+                    const statusColor = s => s==="paid"?"#10b981":s==="overdue"?"#ef4444":s==="pending"?"#f59e0b":"#64748b";
+                    const statusLabel = s => s==="paid"?"Lunas":s==="overdue"?"Jatuh Tempo":s==="pending"?"Menunggu":"Draft";
+                    const rows = fInvs.map((inv,i) => `
+                      <tr style="border-bottom:1px solid #e2e8f0;background:${i%2===0?"#fff":"#f8fafc"}">
+                        <td style="padding:9px 12px;font-family:monospace;font-size:11px;color:#475569">${inv.id}</td>
+                        <td style="padding:9px 12px;font-size:12px;font-weight:500">${inv.client}</td>
+                        <td style="padding:9px 12px;font-size:12px">${inv.date||"-"}</td>
+                        <td style="padding:9px 12px;font-size:12px">${inv.due||"-"}</td>
+                        <td style="padding:9px 12px;font-family:monospace;font-size:12px;font-weight:700;color:#10b981">${fmt2(tot(inv.items))}</td>
+                        <td style="padding:9px 12px"><span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${statusColor(inv.status)}20;color:${statusColor(inv.status)}">${statusLabel(inv.status)}</span></td>
+                      </tr>`).join("");
+                    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Daftar Invoice — GKS</title>
+                    <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Segoe UI,sans-serif;padding:32px;color:#1e293b}table{width:100%;border-collapse:collapse}@media print{.no-print{display:none!important}}</style></head>
+                    <body>
+                    <div class="no-print" style="text-align:center;margin-bottom:20px;display:flex;gap:10px;justify-content:center">
+                      <button onclick="window.print()" style="background:#1e90ff;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">🖨️ Print / Simpan PDF</button>
+                      <button onclick="window.close()" style="background:#e2e8f0;color:#475569;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px">✕ Tutup</button>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #e2e8f0">
+                      <div style="display:flex;align-items:center;gap:14px">
+                        <img src="${GKS_LOGO}" style="width:52px;height:52px;border-radius:12px" alt="GKS"/>
+                        <div>
+                          <div style="font-size:17px;font-weight:800;letter-spacing:1px"><span style="color:#00B4D8">GLOBAL</span> <span style="color:#C2185B">KARUNIA</span> <span style="color:#FFA000">SUPPLY</span></div>
+                          <div style="font-size:11px;color:#64748b;margin-top:2px">Finance Dashboard</div>
+                        </div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font-size:20px;font-weight:900;color:#0f172a">Daftar Invoice</div>
+                        <div style="font-size:11px;color:#64748b;margin-top:3px">${new Date().toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})}</div>
+                      </div>
+                    </div>
+                    <table>
+                      <thead><tr style="background:#f1f5f9">
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569">No Invoice</th>
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569">Klien</th>
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569">Tanggal</th>
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569">Jatuh Tempo</th>
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569">Total</th>
+                        <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#475569">Status</th>
+                      </tr></thead>
+                      <tbody>${rows}</tbody>
+                    </table>
+                    <div style="margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between">
+                      <span><span style="color:#00B4D8;font-weight:700">GLOBAL</span> <span style="color:#C2185B;font-weight:700">KARUNIA</span> <span style="color:#FFA000;font-weight:700">SUPPLY</span></span>
+                      <span>Dicetak ${new Date().toLocaleDateString("id-ID")} • ${fInvs.length} invoice</span>
+                    </div>
+                    </body></html>`;
+                    const w = window.open("","_blank","width=900,height=700");
+                    w.document.write(html); w.document.close();
+                  }}
                 />
                 <button className="btn btn-p" onClick={()=>sIF(true)}>+ Buat Invoice</button>
               </div>
